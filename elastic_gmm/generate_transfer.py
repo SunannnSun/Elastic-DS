@@ -9,59 +9,80 @@ from elastic_gmm.IK import solveIK, solveTraj, solveTrajDense
 
 
 def start_adapting(gmm, traj, target_start_pose, target_end_pose, dt=None):
-    mu = gmm.Mu.T#(gmm['ds_gmm'][0][0][0].T)
-    dim = mu.shape[1]
-    sigma = gmm.Sigma
+    """
+    Require listed trajectory (no rollout) of stacked position and velocity
+
+    traj: an L-length list of [M, N] NumPy array: L number of trajectories, each containing M observations of N dimension
+
+    dim: N/2 just the dimension of position
+
+    mu: (K, dim)
+
+    sigma: (K, dim, dim)
+
+    pi: (K, )
+    """
+
     pi = gmm.Priors
+    mu = gmm.Mu.T  #(gmm['ds_gmm'][0][0][0].T)
+    sigma = gmm.Sigma
+    dim = mu.shape[1]
 
 
-    start_point = []
-    end_point = []
-    for k in range(dim):
-        #get xyz start point and end point
-        start_point.append(sum([sum(traj[i][0][k,:5])/5 for i in range(len(traj))]) / len(traj))
-        end_point.append(sum([sum(traj[i][0][k,-5:])/5 for i in range(len(traj))]) / len(traj))
-    start_point = np.array(start_point)
-    end_point = np.array(end_point)
+    start_point = np.zeros((dim, ))
+    end_point = np.zeros((dim, ))
+    L = len(traj)
+    for l in range(L):
+        start_point += np.average(traj[l][:dim, :5], axis=1) / L
+        end_point +=np.average(traj[l][:dim, -5:], axis=1) / L
+    
+
+    """legacy"""
+    # for k in range(dim):
+    #     #get xyz start point and end point
+    #     start_point.append(sum([sum(traj[i][k,:5])/5 for i in range(len(traj))]) / len(traj))  # first five points
+    #     end_point.append(sum([sum(traj[i][k,-5:])/5 for i in range(len(traj))]) / len(traj))   # last five points
+    # start_point = np.array(start_point)
+    # end_point = np.array(end_point)
 
     traj_dis = np.linalg.norm(end_point - start_point)
-
     anchor_arr = get_joints(mu, sigma, end_point, start_point, dim)[::-1]
 
 
-    #reverse mu, sigma, and pi, go from the beginning to the end
+    pi = pi[::-1]    #reverse mu, sigma, and pi, go from the beginning to the end
     mu = mu[::-1]
     sigma = sigma[::-1]
-    pi = pi[::-1]
     if dim == 2:
         gk = GaussianKinematics(pi, mu, sigma, anchor_arr)
     else:
         gk = GaussianKinematics3D(pi, mu, sigma, anchor_arr)
 
-    show_original_traj(gk, traj)
+    # show_original_traj(gk, traj) # Optional
 
     if dt is None:
         dt = get_dt(traj, dim)
 
-    print('dt', dt)
     traj_data, mean_arr, cov_arr, new_anchor_point = generate_transfer_traj(gk, target_start_pose, target_end_pose, traj_dis, dt)
-    
-    
     
     return traj_data, pi, mean_arr, cov_arr, new_anchor_point
 
+
+
+
 def show_original_traj(gk_var, original_traj):
     dim = gk_var.anchor_arr.shape[1]
-    traj_bunch = [original_traj[i][0][:dim,:] for i in range(len(original_traj))]
+    traj_bunch = [original_traj[i][:dim,:] for i in range(len(original_traj))]
     traj_bunch = np.hstack(traj_bunch)
     frame_arr, mean_arr, cov_arr  = gk_var.update_gaussian_transforms(gk_var.anchor_arr)
-    #gk_var.plot(frame_arr, mean_arr, cov_arr, None, traj_bunch.T)
+    gk_var.plot(frame_arr, mean_arr, cov_arr, None, traj_bunch.T)
+
+
 
 def get_dt(Data, dim):
     all_dt = []
 
     for trajectory in Data:
-        traj = trajectory[0]
+        traj = trajectory
         temp_velocities = np.linalg.norm(traj[dim:,:], axis=0)
         normal_indices = np.where(np.abs(temp_velocities) > 1e-8)[0]
         

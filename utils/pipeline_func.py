@@ -15,6 +15,9 @@ from lpv_ds_a.dpmm.main import dpmm
 from lpv_ds_a.utils_ds.structures import ds_gmms
 from lpv_ds_a.ds_opt.main import ds_opt
 
+
+
+
 class elastic_struct:
     gmm_struct : ds_gmms = None
     A_k = None
@@ -35,6 +38,8 @@ def get_gmm(traj_segment):   #(N_traj, 1, 4 or 6)
     # re-arrange the data
     gmm_struct = rearrange_clusters(Priors, Mu, Sigma, att)
     return gmm_struct
+
+
 
 def get_ds(gmm, traj, joints, geo_descriptor):
     Data, Data_sh, att, x0_all, dt, data, traj_length = processDataStructure(copy.deepcopy([traj]))
@@ -76,6 +81,8 @@ def combine_gmms(gmm_struct_arr, joint_arr):
         joint = None
 
     return pi, mu, sigma, joint
+
+
 
 
 def save_json(name, idx, pkg_dir, es : elastic_struct):
