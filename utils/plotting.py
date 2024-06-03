@@ -477,8 +477,8 @@ def plot_full_func(ds_struct, original_ds_struct, tunnel=False):
         ax[i].set_ylim([0.0, 1.0])
         ax[i].set_xlabel(r"$\xi_1$", fontsize=10)
         ax[i].set_ylabel(r"$\xi_2$", fontsize=10)
-        ax[i].set_xticks([]) 
-        ax[i].set_yticks([])
+        # ax[i].set_xticks([]) 
+        # ax[i].set_yticks([])
 
     vs0 = plot_struct()
     vs0.show_ds = True

@@ -2,6 +2,7 @@ import numpy as np
 
 
 def knn_search(Mu, att, size):
+    # Mu = Mu.T
     distances = np.zeros(len(Mu))
     index = 0
     for mu in Mu:

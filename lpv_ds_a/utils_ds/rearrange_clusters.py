@@ -6,6 +6,7 @@ from lpv_ds_a.math_tool.gaussain.adjust_covariances import adjust_covariances
 
 # Plug in Priors (1xK) Mu(dim x K) Sigma (K x dim x dim) attractor
 def rearrange_clusters(Priors, Mu, Sigma, att):
+    # Mu = Mu.T
     dim = len(Mu)
     # rearrange the probability arrangement
     idx = knn_search(Mu.T, att.reshape(len(att)), len(Mu[0]))

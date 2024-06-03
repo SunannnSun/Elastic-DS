@@ -24,18 +24,9 @@ from lpv_ds_a.utils_ds.structures import ds_gmms
 
 
 
-def elastic_func(gmm, traj, start_constr, end_constr):
-    """
-    gmm: dictionary
-    traj: 
-    """
+def elastic_func(traj, gmm, start_constr, end_constr):
 
-
-    new_traj, pi, mean_arr, cov_arr, _ = start_adapting(gmm, traj, start_constr, end_constr)
-    new_gmm = ds_gmms()
-    new_gmm.Mu = mean_arr.T
-    new_gmm.Priors = pi
-    new_gmm.Sigma = cov_arr
+    new_traj, new_gmm, _ = start_adapting(traj, gmm, start_constr, end_constr)
 
     return new_gmm, new_traj
 
@@ -85,20 +76,20 @@ if __name__ == "__main__":
         [(0.1167, 0.2660, -np.pi/4), (0.8718, 0.6733, np.pi/4)],
         [(0.2, 0.85, -np.pi/4), (0.7, 0.35, np.pi/4)]
     ]
-    geo_config = geo_test_arr[2]
+    geo_config = geo_test_arr[0]
     O_s = np.array([create_transform_azi(np.array(geo_config[0][:2]), geo_config[0][2]), 
                     create_transform_azi(np.array(geo_config[1][:2]), geo_config[1][2])])
 
     #----------------------------------------------------#
     #--------------------start adapting -----------------#
     #----------------------------------------------------#
+    traj_data, gmm_struct, _ = start_adapting(first_segment_data[0], old_gmm_struct, O_s[0], O_s[1])
 
-    gmm_struct, traj_data = elastic_func(old_gmm_struct, first_segment_data[0], O_s[0], O_s[1])
 
     #----------------------------------------------------#
     #----------------------2nd DS -----------------------#
     #----------------------------------------------------#
-    ds_struct = get_ds(gmm_struct, traj_data, None, geo_config)
+    ds_struct = get_ds(gmm_struct, traj_data,  None, geo_config)
 
     #----------------------------------------------------#
     #----------------------plot--------------------------#

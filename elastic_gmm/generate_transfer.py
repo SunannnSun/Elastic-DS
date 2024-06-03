@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
+
+from lpv_ds_a.utils_ds.structures import ds_gmms
 from elastic_gmm.gaussian_kinematics import GaussianKinematics, GaussianKinematics3D,\
     get_angles_between_two_2d, create_transform_azi, create_transform_ele, get_angles_between_two_3d
 from elastic_gmm.find_joints import get_joints
@@ -8,7 +10,7 @@ from elastic_gmm.IK import solveIK, solveTraj, solveTrajDense
 
 
 
-def start_adapting(gmm, traj, target_start_pose, target_end_pose, dt=None):
+def start_adapting(traj, gmm, target_start_pose, target_end_pose, dt=None):
     """
     Require listed trajectory (no rollout) of stacked position and velocity
 
@@ -37,14 +39,6 @@ def start_adapting(gmm, traj, target_start_pose, target_end_pose, dt=None):
         end_point +=np.average(traj[l][:dim, -5:], axis=1) / L
     
 
-    """legacy"""
-    # for k in range(dim):
-    #     #get xyz start point and end point
-    #     start_point.append(sum([sum(traj[i][k,:5])/5 for i in range(len(traj))]) / len(traj))  # first five points
-    #     end_point.append(sum([sum(traj[i][k,-5:])/5 for i in range(len(traj))]) / len(traj))   # last five points
-    # start_point = np.array(start_point)
-    # end_point = np.array(end_point)
-
     traj_dis = np.linalg.norm(end_point - start_point)
     anchor_arr = get_joints(mu, sigma, end_point, start_point, dim)[::-1]
 
@@ -62,9 +56,14 @@ def start_adapting(gmm, traj, target_start_pose, target_end_pose, dt=None):
     if dt is None:
         dt = get_dt(traj, dim)
 
-    traj_data, mean_arr, cov_arr, new_anchor_point = generate_transfer_traj(gk, target_start_pose, target_end_pose, traj_dis, dt)
+    new_traj, mean_arr, cov_arr, new_anchor_point = generate_transfer_traj(gk, target_start_pose, target_end_pose, traj_dis, dt)
     
-    return traj_data, pi, mean_arr, cov_arr, new_anchor_point
+    new_gmm = ds_gmms()
+    new_gmm.Mu = mean_arr.T
+    new_gmm.Priors = pi
+    new_gmm.Sigma = cov_arr
+
+    return new_traj, new_gmm, new_anchor_point
 
 
 
@@ -113,6 +112,8 @@ def generate_transfer_traj(gk_var, start_T, end_T, traj_dis, dt):
     #gk_var.plot(frame_arr, mean_arr, cov_arr, None, plot_traj)
 
     return traj_data, mean_arr, cov_arr, new_anchor_point
+
+
 
 
 def generate_continuous_traj(new_anchor_point, demo_traj, via_idxs):
