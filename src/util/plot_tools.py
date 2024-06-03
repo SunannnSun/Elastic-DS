@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MaxNLocator
 import random
+from scipy.spatial.transform import Rotation as R
 
 plt.rcParams.update({
     "text.usetex": True,
@@ -92,20 +93,55 @@ def plot_gmm(x_train, label):
 
 
 
-def plot_ds(x_train, x_test_list):
+def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[]):
     N = x_train.shape[1]
 
     fig = plt.figure(figsize=(12, 10))
     if N == 2:
         ax = fig.add_subplot()
         ax.scatter(x_train[:, 0], x_train[:, 1], color='k', s=1, alpha=0.4, label="Demonstration")
-        ax.plot(x_test[:, 0], x_test[:, 1], color= 'b')
+        # ax.plot(x_test[:, 0], x_test[:, 1], color= 'b')
     elif N == 3:
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color='k', s=3, alpha=0.4, label="Demonstration")
 
-        for idx, x_test in enumerate(x_test_list):
-            ax.plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], color= 'b')
+        colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+        "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+
+
+
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(x_test[:, 0], x_test[:, 1], x_test[:, 2], 'o', color='r', s=3, alpha=0.4, label="Demonstration")
+        if len(label)!=0:
+            color_mapping = np.take(colors, label)
+            ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color=color_mapping[:], s=3, alpha=0.4, label="Demonstration")
+        else:
+            ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color='k', s=3, alpha=0.4, label="Demonstration")
+        if len(old_joints)!=0:
+            ax.scatter(old_joints[:, 0], old_joints[:, 1], old_joints[:, 2], '*', color='b', s=20, alpha=1)
+        if len(new_joints)!=0:
+            ax.scatter(new_joints[:, 0], new_joints[:, 1], new_joints[:, 2], '*', color='r', s=20, alpha=1)
+        
+
+
+        x_min, x_max = ax.get_xlim()
+        scale = (x_max - x_min)/4
+
+        # label_k =np.where(label == k)[0]
+        loc = T_init[:3, -1]
+        r = R.from_matrix(T_init[:3, :3])
+
+        # r = gmm.gaussian_list[k]["mu"][1]
+        for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
+                                            colors)):
+            line = np.zeros((2, 3))
+            line[1, j] = scale
+            line_rot = r.apply(line)
+            line_plot = line_rot + loc
+            ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
+
+
+        # for idx, x_test in enumerate(x_test_list):
+        #     ax.plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], color= 'b')
         ax.set_xlabel(r'$\xi_1$', fontsize=38, labelpad=20)
         ax.set_ylabel(r'$\xi_2$', fontsize=38, labelpad=20)
         ax.set_zlabel(r'$\xi_3$', fontsize=38, labelpad=20)

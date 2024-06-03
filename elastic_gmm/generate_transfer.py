@@ -63,7 +63,7 @@ def start_adapting(traj, gmm, target_start_pose, target_end_pose, dt=None):
     new_gmm.Priors = pi
     new_gmm.Sigma = cov_arr
 
-    return new_traj, new_gmm, new_anchor_point
+    return new_traj, new_gmm, anchor_arr, new_anchor_point
 
 
 

@@ -5,6 +5,23 @@ import numpy as np
 from elastic_gmm.gaussian2d import generate_surface, plot_sample
 from elastic_gmm.gaussian3d import create_ellipsoid
 # from find_joints import find_most_similar_eig
+from scipy.spatial.transform import Rotation as R
+
+
+
+def create_transform(translation:np.ndarray, quaternion:R)->np.ndarray:
+
+    T = np.zeros((4, 4))
+    T[:3, -1] = translation
+    T[:3, :3] = quaternion.as_matrix()
+    T[-1, -1] = 1
+
+    return T
+
+
+
+
+
 
 def create_transform_azi(trans, jnt_rot):
     if len(trans) == 2:
