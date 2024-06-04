@@ -35,15 +35,15 @@ from lpv_ds_a.utils_ds.rearrange_clusters import rearrange_clusters
 gmm_struct = rearrange_clusters(damm.Priors, damm.Mu.T, damm.Sigma, p_att.T)
 
 
-from elastic_gmm.gaussian_kinematics import create_transform
-T_init = create_transform(p_init[0], q_init[0])
-T_att  = create_transform(p_att, q_att)
+from elastic_gmm.gaussian_kinematics import create_transform, create_transform_axs
 
+T_init = create_transform_axs(p_in, number=200)
+T_att = create_transform_axs(np.flip(p_in, axis=0), number=10)
 
 from elastic_gmm.generate_transfer import start_adapting
 p_io = [np.hstack((p_in, p_out)).T]
 traj_data, gmm_struct, old_joints, new_joints = start_adapting(p_io, gmm_struct, T_init, T_att)
 
 
-plot_tools.plot_ds(p_in ,traj_data[0].T, old_joints, new_joints, assignment_arr, T_init)
+plot_tools.plot_ds(p_in ,traj_data[0].T, old_joints, new_joints, assignment_arr, T_init, T_att)
 plt.show()

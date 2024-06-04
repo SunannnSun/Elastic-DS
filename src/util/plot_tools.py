@@ -93,7 +93,7 @@ def plot_gmm(x_train, label):
 
 
 
-def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[]):
+def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[], T_att=[]):
     N = x_train.shape[1]
 
     fig = plt.figure(figsize=(12, 10))
@@ -105,7 +105,6 @@ def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[]):
 
         colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
         "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
-
 
 
 
@@ -139,7 +138,17 @@ def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[]):
             line_plot = line_rot + loc
             ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
 
+        loc = T_att[:3, -1]
+        r = R.from_matrix(T_att[:3, :3])
 
+        # r = gmm.gaussian_list[k]["mu"][1]
+        for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
+                                            colors)):
+            line = np.zeros((2, 3))
+            line[1, j] = scale
+            line_rot = r.apply(line)
+            line_plot = line_rot + loc
+            ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
         # for idx, x_test in enumerate(x_test_list):
         #     ax.plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], color= 'b')
         ax.set_xlabel(r'$\xi_1$', fontsize=38, labelpad=20)
