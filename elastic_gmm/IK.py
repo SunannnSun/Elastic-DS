@@ -17,7 +17,7 @@ def solveIK(anchor_arr, target_start_T, target_end_T, traj_dis) -> None:
 
     scale_ratio = 1.0
     if target_start_T is not None and target_end_T is not None:
-        scale_ratio = (np.linalg.norm(target_start_T[0:dim, -1] -target_end_T[0:dim, 0]))/(traj_dis)
+        scale_ratio = (np.linalg.norm(target_start_T[0:dim, -1] - target_end_T[0:dim, -1]))/(traj_dis)
 
     if target_start_T is not None:
 
@@ -123,6 +123,9 @@ def solveTraj(new_anchor, dt):
     return edited_traj, edited_dot_traj
 
 
+
+
+"""
 def solveTrajDense(new_anchor, via_idxs, dt):
     def interpolate_waypoints(waypoints, indices, num_points_between):
 
@@ -208,6 +211,7 @@ def solveTrajDense(new_anchor, via_idxs, dt):
     # plt.show()
 
     return edited_traj, edited_dot_traj
+"""
 
 class LaplacianEdit:
     def __init__(self, traj, end_point_fix=True) -> None:

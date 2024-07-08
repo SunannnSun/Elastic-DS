@@ -5,64 +5,6 @@ import numpy as np
 from elastic_gmm.gaussian2d import generate_surface, plot_sample
 from elastic_gmm.gaussian3d import create_ellipsoid
 # from find_joints import find_most_similar_eig
-from scipy.spatial.transform import Rotation as R
-
-
-
-def create_transform(translation:np.ndarray, quaternion:R)->np.ndarray:
-
-    T = np.zeros((4, 4))
-    T[:3, -1] = translation
-    T[:3, :3] = quaternion.as_matrix()
-    T[-1, -1] = 1
-
-
-    
-
-    return T
-
-
-
-def create_transform_axs(p_in:np.ndarray, number)->np.ndarray:
-
-
-    v = p_in[number, :]-p_in[0, :]
-
-    # Ensure v is a unit vector
-    v = v / np.linalg.norm(v)
-    
-    # Create an arbitrary vector not parallel to v
-    if np.allclose(v, [1, 0, 0]):
-        arbitrary_vector = np.array([0, 1, 0])
-    else:
-        arbitrary_vector = np.array([1, 0, 0])
-    
-    # Compute u2 by taking the cross product and normalizing
-    u2 = np.cross(v, arbitrary_vector)
-    u2 = u2 / np.linalg.norm(u2)
-    
-    # Compute u3 by taking the cross product
-    u3 = np.cross(v, u2)
-    
-    # Construct the orientation matrix
-    R = np.column_stack((v, u2, u3))
-
-
-    T = np.zeros((4, 4))
-
-
-    T[:3, :3] = R
-    T[:3, -1] = p_in[0, :]
-    T[-1, -1] = 1
-
-    return T
-
-
-
-
-
-
-
 
 def create_transform_azi(trans, jnt_rot):
     if len(trans) == 2:

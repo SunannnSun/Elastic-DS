@@ -36,9 +36,9 @@ def get_joints(mu, sigma, start, end, dim):
         jnt_arr = []
 
         for i in range(len(mu)-1):
-            # Plot
-            p_1 = np.zeros((plot_sample, plot_sample))
-            p_2 = np.zeros((plot_sample, plot_sample))
+            # # Plot
+            # p_1 = np.zeros((plot_sample, plot_sample))
+            # p_2 = np.zeros((plot_sample, plot_sample))
 
             idx1 = i
             idx2 = idx1+1

@@ -1,23 +1,25 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from src.util import load_tools, process_tools, plot_tools
+from src.util import load_tools, plot_tools
 from src.damm.damm_class import damm_class
-from src.dsopt.dsopt_class import dsopt_class
+from src.ds_opt.dsopt_class import dsopt_class
 
 
-# Load data (Optional)
-p_raw, q_raw, t_raw = load_tools.load_clfd_dataset(task_id=0, num_traj=1, sub_sample=1)
-# p_raw, q_raw, t_raw = load_tools.load_demo_dataset()
+# load data
+input_message = '''
+Please choose a data input option:
+1. PC-GMM benchmark data
+2. LASA benchmark data
+3. DAMM demo data
+4. DEMO
+Enter the corresponding option number: '''
+input_opt  = input(input_message)
 
-# Process data (Optional)
-p_in, q_in, t_in             = process_tools.pre_process(p_raw, q_raw, t_raw, opt= "savgol")
-p_out, q_out                 = process_tools.compute_output(p_in, q_in, t_in)
-p_init, q_init, p_att, q_att = process_tools.extract_state(p_in, q_in)
-p_in, q_in, p_out, q_out     = process_tools.rollout_list(p_in, q_in, p_out, q_out)
+x, x_dot, x_att, x_init = load_tools.load_data(int(input_opt))
 
-# """
-dim = p_in.shape[1]
+dim = x.shape[1]
+
 param ={
     "mu_0":           np.zeros((dim, )), 
     "sigma_0":        0.1 * np.eye(dim),
@@ -26,24 +28,33 @@ param ={
     "sigma_dir_0":    0.1,
     "min_thold":      10
 }
-damm  = damm_class(p_in, p_out, param)
+
+damm  = damm_class(x, x_dot, param)
 gamma = damm.begin()
-assignment_arr = np.argmax(gamma, axis=0)
 
 
 from lpv_ds_a.utils_ds.rearrange_clusters import rearrange_clusters
-gmm_struct = rearrange_clusters(damm.Priors, damm.Mu.T, damm.Sigma, p_att.T)
+# gmm_struct = rearrange_clusters(damm.Priors, damm.Mu, damm.Sigma, x_att.T)
+assignment_arr = np.argmax(gamma, axis=0)
+
+plot_tools.plot_gmm(x, assignment_arr)
+# plt.show()
 
 
-from elastic_gmm.gaussian_kinematics import create_transform, create_transform_axs
-
-T_init = create_transform_axs(p_in, number=200)
-T_att = create_transform_axs(np.flip(p_in, axis=0), number=10)
-
-from elastic_gmm.generate_transfer import start_adapting
-p_io = [np.hstack((p_in, p_out)).T]
-traj_data, gmm_struct, old_joints, new_joints = start_adapting(p_io, gmm_struct, T_init, T_att)
+from elastic_gmm.gaussian_kinematics import create_transform_azi
 
 
-plot_tools.plot_ds(p_in ,traj_data[0].T, old_joints, new_joints, assignment_arr, T_init, T_att)
-plt.show()
+geo_test_arr = [
+    [(0.1167, 0.4660, -np.pi/4), (0.8718, 0.4733, np.pi/4)],
+    [(0.1167, 0.2660, -np.pi/4), (0.8718, 0.6733, np.pi/4)],
+    [(0.2, 0.85, -np.pi/4), (0.7, 0.35, np.pi/4)]
+]
+geo_config = geo_test_arr[0]
+O_s = np.array([create_transform_azi(np.array(geo_config[0][:2]), geo_config[0][2]), 
+                create_transform_azi(np.array(geo_config[1][:2]), geo_config[1][2])])
+
+
+
+
+
+a = 1

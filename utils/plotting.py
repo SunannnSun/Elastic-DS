@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-plt.rcParams['figure.dpi'] = 300
+# plt.rcParams['figure.dpi'] = 300
 import matplotlib.patches as patches
 import matplotlib as mpl
 import math
@@ -469,7 +469,7 @@ def plot_single_func(ds_struct):
 
 
 def plot_full_func(ds_struct, original_ds_struct, tunnel=False):
-    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(5, 10))
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(8, 6))
 
     for i in range(2):
         ax[i].set_aspect(1)

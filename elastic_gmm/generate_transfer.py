@@ -6,7 +6,8 @@ from lpv_ds_a.utils_ds.structures import ds_gmms
 from elastic_gmm.gaussian_kinematics import GaussianKinematics, GaussianKinematics3D,\
     get_angles_between_two_2d, create_transform_azi, create_transform_ele, get_angles_between_two_3d
 from elastic_gmm.find_joints import get_joints
-from elastic_gmm.IK import solveIK, solveTraj, solveTrajDense
+# from elastic_gmm.IK import solveIK, solveTraj, solveTrajDense
+from elastic_gmm.IK import solveIK, solveTraj
 
 
 
@@ -14,7 +15,7 @@ def start_adapting(traj, gmm, target_start_pose, target_end_pose, dt=None):
     """
     Require listed trajectory (no rollout) of stacked position and velocity
 
-    traj: an L-length list of [M, N] NumPy array: L number of trajectories, each containing M observations of N dimension
+    # traj: an L-length list of [M, N] NumPy array: L number of trajectories, each containing M observations of N dimension
 
     dim: N/2 just the dimension of position
 

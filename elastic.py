@@ -83,7 +83,7 @@ if __name__ == "__main__":
     #----------------------------------------------------#
     #--------------------start adapting -----------------#
     #----------------------------------------------------#
-    traj_data, gmm_struct, _, _ = start_adapting(first_segment_data[0], old_gmm_struct, O_s[0], O_s[1])
+    traj_data, gmm_struct, _ = start_adapting(first_segment_data[0], old_gmm_struct, O_s[0], O_s[1])
 
 
     #----------------------------------------------------#

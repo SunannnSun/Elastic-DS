@@ -10,6 +10,7 @@ def rearrange_clusters(Priors, Mu, Sigma, att):
     dim = len(Mu)
     # rearrange the probability arrangement
     idx = knn_search(Mu.T, att.reshape(len(att)), len(Mu[0]))
+    
     Priors_old = Priors.copy()
     Mu_old = Mu.copy()
     Sigma_old = Sigma.copy()

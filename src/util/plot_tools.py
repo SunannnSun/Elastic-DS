@@ -1,135 +1,149 @@
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from matplotlib.ticker import MaxNLocator
-import random
+from matplotlib.ticker import FormatStrFormatter
 from scipy.spatial.transform import Rotation as R
-
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Times New Roman",
-    "font.size": 30
-})
+from .quat_tools import *
+import random
+from dtw import dtw
 
 
-
-
-def plot_reference(Data, att):
-    fig = plt.figure(figsize=(8, 6))
-    M = len(Data) / 2  # store 1 Dim of Data
-    if M == 2:
-        ax = fig.add_subplot(111)
-        ax.set_xlabel(r'$\xi_1$')
-        ax.set_ylabel(r'$\xi_2$')
-        ax.set_title('Reference Trajectory')
-
-        # Plot the position trajectories
-        plt.plot(Data[0], Data[1], 'ro', markersize=1)
-        # plot attractor
-        # plt.scatter(att[0], att[1], s=100, c='blue', alpha=0.5)
-        plt.scatter(att[0], att[1], marker=(8, 2, 0), s=100, c='k')
-
-        # Plot Velocities of Reference Trajectories
-        vel_points = Data[:, ::vel_sample]
-        U = np.zeros(len(vel_points[0]))
-        V = np.zeros(len(vel_points[0]))  # （385,)
-        for i in np.arange(0, len(vel_points[0])):
-            dir_ = vel_points[2:, i] / np.linalg.norm(vel_points[2:, i])
-            U[i] = dir_[0]
-            V[i] = dir_[1]
-        q = ax.quiver(vel_points[0], vel_points[1], U, V, width=0.005, scale=vel_size)
-    else:
-        ax = fig.add_subplot(projection='3d')
-        ax.plot(Data[0], Data[1], Data[2], 'ro', markersize=1.5)
-        ax.scatter(att[0], att[1], att[2], s=200, c='blue', alpha=0.5)
-        ax.axis('auto')
-        ax.set_title('Reference Trajectory')
-        ax.set_xlabel(r'$\xi_1(m)$')
-        ax.set_ylabel(r'$\xi_2(m)$')
-        ax.set_zlabel(r'$\xi_3(m)$')
-        vel_points = Data[:, ::vel_sample]
-        U = np.zeros(len(vel_points[0]))
-        V = np.zeros(len(vel_points[0]))
-        W = np.zeros(len(vel_points[0]))
-        for i in np.arange(0, len(vel_points[0])):
-            dir_ = vel_points[3:, i] / np.linalg.norm(vel_points[3:, i])
-            U[i] = dir_[0]
-            V[i] = dir_[1]
-            W[i] = dir_[2]
-        q = ax.quiver(vel_points[0], vel_points[1], vel_points[2], U, V, W, length=0.04, normalize=True,colors='k')
-
-
-    plt.show()
+font = {'family' : 'Times New Roman',
+         'size'   : 18
+         }
+mpl.rc('font', **font)
 
 
 
 
-def plot_gmm(x_train, label):
-    N = x_train.shape[1]
+
+
+def plot_vel(v_test, w_test):
+    v_test = np.vstack(v_test)
+    M, N = v_test.shape
+
+    fig, axs = plt.subplots(3, 1, figsize=(12, 8))
 
     colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
     "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+    for k in range(3):
+        axs[k].scatter(np.arange(M), v_test[:, k], s=5, color=colors[k])
+        # axs[k].set_ylim([0, 1])
+    
+    axs[0].set_title("Linear Velocity")
+
+    w_test = np.vstack(w_test)
+    M, N = w_test.shape
+    fig, axs = plt.subplots(3, 1, figsize=(12, 8))
+
+    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+    for k in range(3):
+        axs[k].scatter(np.arange(M), w_test[:, k], s=5, color=colors[k])
+        # axs[k].set_ylim([0, 1])
+    axs[0].set_title("Angular Velocity")
+
+
+
+def plot_gamma(gamma_arr, **argv):
+
+    M, K = gamma_arr.shape
+
+    fig, axs = plt.subplots(K, 1, figsize=(12, 8))
+
+    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+    for k in range(K):
+        axs[k].scatter(np.arange(M), gamma_arr[:, k], s=5, color=colors[k])
+        axs[k].set_ylim([0, 1])
+    
+    if "title" in argv:
+        axs[0].set_title(argv["title"])
+    else:
+        axs[0].set_title(r"$\gamma(\cdot)$ over Time")
+
+
+
+
+def plot_result(p_train, p_test, q_test):
+
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(projection='3d')
+
+
+    ax.plot(p_train[:, 0], p_train[:, 1], p_train[:, 2], 'o', color='gray', alpha=0.2, markersize=1.5, label="Demonstration")
+    ax.plot(p_test[:, 0], p_test[:, 1], p_test[:, 2],  color='k', label = "Reproduction")
+
+    ax.scatter(p_test[0, 0], p_test[0, 1], p_test[0, 2], 'o', facecolors='none', edgecolors='magenta',linewidth=2,  s=100, label="Initial")
+    ax.scatter(p_test[-1, 0], p_test[-1, 1], p_test[-1, 2], marker=(8, 2, 0), color='k',  s=100, label="Target")
+
+
+    colors = ("#FF6666", "#005533", "#1199EE")  # Colorblind-safe RGB
+    x_min, x_max = ax.get_xlim()
+    scale = (x_max - x_min)/4
+    
+    for i in np.linspace(0, len(q_test), num=30, endpoint=False, dtype=int):
+
+        r = q_test[i]
+        loc = p_test[i, :]
+        for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
+                                            colors)):
+            line = np.zeros((2, 3))
+            line[1, j] = scale
+            line_rot = r.apply(line)
+            line_plot = line_rot + loc
+            ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
+
+
+    ax.axis('equal')
+    ax.legend(ncol=4, loc="upper center")
+
+    ax.set_xlabel(r'$\xi_1$', labelpad=20)
+    ax.set_ylabel(r'$\xi_2$', labelpad=20)
+    ax.set_zlabel(r'$\xi_3$', labelpad=20)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.zaxis.set_major_locator(MaxNLocator(nbins=4))
+
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+
+
+
+
+def plot_gmm(p_in, gmm):
+
+    label = gmm.assignment_arr
+    K     = gmm.K
+
+    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
     color_mapping = np.take(colors, label)
 
-
     fig = plt.figure(figsize=(12, 10))
-    if N == 2:
-        ax = fig.add_subplot()
-        ax.scatter(x_train[:, 0], x_train[:, 1], color=color_mapping[:], alpha=0.4, label="Demonstration")
+    ax = fig.add_subplot(projection='3d')
 
-    elif N == 3:
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color=color_mapping[:], s=3, alpha=0.4, label="Demonstration")
-        ax.set_xlabel(r'$\xi_1$', fontsize=38, labelpad=20)
-        ax.set_ylabel(r'$\xi_2$', fontsize=38, labelpad=20)
-        ax.set_zlabel(r'$\xi_3$', fontsize=38, labelpad=20)
-        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.zaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.tick_params(axis='z', which='major', pad=15)
+    ax.scatter(p_in[:, 0], p_in[:, 1], p_in[:, 2], 'o', color=color_mapping[:], s=1, alpha=0.4, label="Demonstration")
 
+    colors = ("#FF6666", "#005533", "#1199EE")  # Colorblind-safe RGB
 
+    x_min, x_max = ax.get_xlim()
+    scale = (x_max - x_min)/4
+    for k in range(K):
+        label_k =np.where(label == k)[0]
 
+        p_in_k = p_in[label_k, :]
+        loc = np.mean(p_in_k, axis=0)
 
-def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[], T_att=[]):
-    N = x_train.shape[1]
-
-    fig = plt.figure(figsize=(12, 10))
-    if N == 2:
-        ax = fig.add_subplot()
-        ax.scatter(x_train[:, 0], x_train[:, 1], color='k', s=1, alpha=0.4, label="Demonstration")
-        # ax.plot(x_test[:, 0], x_test[:, 1], color= 'b')
-    elif N == 3:
-
-        colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
-        "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
-
-
-
-        ax = fig.add_subplot(projection='3d')
-        ax.scatter(x_test[:, 0], x_test[:, 1], x_test[:, 2], 'o', color='r', s=3, alpha=0.4, label="Demonstration")
-        if len(label)!=0:
-            color_mapping = np.take(colors, label)
-            ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color=color_mapping[:], s=3, alpha=0.4, label="Demonstration")
-        else:
-            ax.scatter(x_train[:, 0], x_train[:, 1], x_train[:, 2], 'o', color='k', s=3, alpha=0.4, label="Demonstration")
-        if len(old_joints)!=0:
-            ax.scatter(old_joints[:, 0], old_joints[:, 1], old_joints[:, 2], '*', color='b', s=20, alpha=1)
-        if len(new_joints)!=0:
-            ax.scatter(new_joints[:, 0], new_joints[:, 1], new_joints[:, 2], '*', color='r', s=20, alpha=1)
-        
-
-
-        x_min, x_max = ax.get_xlim()
-        scale = (x_max - x_min)/4
-
-        # label_k =np.where(label == k)[0]
-        loc = T_init[:3, -1]
-        r = R.from_matrix(T_init[:3, :3])
-
-        # r = gmm.gaussian_list[k]["mu"][1]
+        r = gmm.gaussian_list[k]["mu"][1]
         for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
                                             colors)):
             line = np.zeros((2, 3))
@@ -138,26 +152,110 @@ def plot_ds(x_train, x_test, old_joints=[], new_joints=[], label=[], T_init=[], 
             line_plot = line_rot + loc
             ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
 
-        loc = T_att[:3, -1]
-        r = R.from_matrix(T_att[:3, :3])
 
-        # r = gmm.gaussian_list[k]["mu"][1]
-        for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
-                                            colors)):
-            line = np.zeros((2, 3))
-            line[1, j] = scale
-            line_rot = r.apply(line)
-            line_plot = line_rot + loc
-            ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
-        # for idx, x_test in enumerate(x_test_list):
-        #     ax.plot(x_test[:, 0], x_test[:, 1], x_test[:, 2], color= 'b')
-        ax.set_xlabel(r'$\xi_1$', fontsize=38, labelpad=20)
-        ax.set_ylabel(r'$\xi_2$', fontsize=38, labelpad=20)
-        ax.set_zlabel(r'$\xi_3$', fontsize=38, labelpad=20)
-        ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-        ax.xaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.yaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.zaxis.set_major_locator(MaxNLocator(nbins=3))
-        ax.tick_params(axis='z', which='major', pad=15)
+    ax.axis('equal')
+
+
+    ax.set_xlabel(r'$\xi_1$', labelpad=20)
+    ax.set_ylabel(r'$\xi_2$', labelpad=20)
+    ax.set_zlabel(r'$\xi_3$', labelpad=20)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.zaxis.set_major_locator(MaxNLocator(nbins=4))
+
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+
+
+
+
+def plot_demo(p_train, q_train):
+
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(projection='3d')
+
+
+    ax.plot(p_train[:, 0], p_train[:, 1], p_train[:, 2], 'o', color='gray', alpha=0.2, markersize=1.5, label="Demonstration")
+
+    ax.scatter(p_train[0, 0], p_train[0, 1], p_train[0, 2], 'o', facecolors='none', edgecolors='magenta',linewidth=2,  s=100, label="Initial")
+    ax.scatter(p_train[-1, 0], p_train[-1, 1], p_train[-1, 2], marker=(8, 2, 0), color='k',  s=100, label="Target")
+
+
+    colors = ("#FF6666", "#005533", "#1199EE")  # Colorblind-safe RGB
+    x_min, x_max = ax.get_xlim()
+    scale = (x_max - x_min)/4
+    
+    if len(q_train) != 0:
+        for i in np.linspace(0, len(q_train), num=20, endpoint=False, dtype=int):
+
+            r = q_train[i]
+            loc = p_train[i, :]
+            for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
+                                                colors)):
+                line = np.zeros((2, 3))
+                line[1, j] = scale
+                line_rot = r.apply(line)
+                line_plot = line_rot + loc
+                ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
+
+
+    ax.axis('equal')
+    ax.legend(ncol=4, loc="upper center")
+
+    ax.set_xlabel(r'$\xi_1$', labelpad=20)
+    ax.set_ylabel(r'$\xi_2$', labelpad=20)
+    ax.set_zlabel(r'$\xi_3$', labelpad=20)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.zaxis.set_major_locator(MaxNLocator(nbins=4))
+
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+
+
+
+
+def demo_vs_adjust(demo, adjust, old_anchor, new_anchor):
+
+
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(projection='3d')
+
+
+    ax.plot(demo[:, 0], demo[:, 1], demo[:, 2], 'o', color='gray', alpha=0.2, markersize=1.5, label="Demonstration")
+    ax.plot(adjust[:, 0], adjust[:, 1], adjust[:, 2], 'o', color='red', alpha=0.2, markersize=1.5, label="Adjusted")
+
+
+    ax.scatter(demo[0, 0], demo[0, 1], demo[0, 2], 'o', facecolors='none', edgecolors='magenta',linewidth=2,  s=100, label="Initial")
+    ax.scatter(demo[-1, 0], demo[-1, 1], demo[-1, 2], marker=(8, 2, 0), color='k',  s=100, label="Target")
+
+
+
+    for i in range(old_anchor.shape[0]):
+        ax.scatter(old_anchor[i, 0], old_anchor[i, 1], old_anchor[i, 2], 'o', facecolors='none', edgecolors='black',linewidth=2,  s=100)
+
+
+    for i in range(new_anchor.shape[0]):
+        ax.scatter(new_anchor[i, 0], new_anchor[i, 1], new_anchor[i, 2], 'o', facecolors='none', edgecolors='red',linewidth=2,  s=100)
+
+
+
+    ax.axis('equal')
+    ax.legend(ncol=4, loc="upper center")
+
+    ax.set_xlabel(r'$\xi_1$', labelpad=20)
+    ax.set_ylabel(r'$\xi_2$', labelpad=20)
+    ax.set_zlabel(r'$\xi_3$', labelpad=20)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.zaxis.set_major_locator(MaxNLocator(nbins=4))
+
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+
