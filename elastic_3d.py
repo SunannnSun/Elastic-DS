@@ -1,10 +1,7 @@
 import numpy as np
 import os, sys
-import argparse
 from os.path import exists
-import pickle
 import matplotlib.pyplot as plt
-import time
 from scipy.spatial.transform import Rotation as R
 
 
@@ -14,14 +11,7 @@ sys.path.append(parent_directory)
 
 
 
-# from elastic_gmm.split_traj import split_traj
-# from elastic_gmm.gaussian_kinematics import create_transform_azi
 from elastic_gmm.generate_transfer import start_adapting
-# from utils.pipeline_func import get_gmm, get_ds
-# from utils.plotting import plot_full_func
-# from lpv_ds_a.utils_ds.structures import ds_gmms
-
-
 
 from src.util import load_tools, process_tools, plot_tools
 from src.se3_class import se3_class

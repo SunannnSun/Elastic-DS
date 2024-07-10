@@ -473,8 +473,8 @@ def plot_full_func(ds_struct, original_ds_struct, tunnel=False):
 
     for i in range(2):
         ax[i].set_aspect(1)
-        # ax[i].set_xlim([0.0, 1.0])
-        # ax[i].set_ylim([0.0, 1.0])
+        ax[i].set_xlim([0.0, 1.0])
+        ax[i].set_ylim([0.0, 1.0])
         ax[i].set_xlabel(r"$\xi_1$", fontsize=10)
         ax[i].set_ylabel(r"$\xi_2$", fontsize=10)
         # ax[i].set_xticks([]) 
