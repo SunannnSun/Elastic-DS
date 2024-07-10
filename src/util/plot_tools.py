@@ -153,6 +153,9 @@ def plot_gmm(p_in, gmm):
             ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, linewidth=1)
 
 
+        ax.text(loc[0], loc[1], loc[2], str(k + 1), fontsize=20)
+
+
     ax.axis('equal')
 
 
@@ -219,7 +222,7 @@ def plot_demo(p_train, q_train):
 
 
 
-def demo_vs_adjust(demo, adjust, old_anchor, new_anchor):
+def demo_vs_adjust(demo, adjust, old_anchor, new_anchor, q_in, new_ori):
 
 
     fig = plt.figure(figsize=(12, 10))
@@ -244,8 +247,108 @@ def demo_vs_adjust(demo, adjust, old_anchor, new_anchor):
 
 
 
+    colors = ("#FF6666", "#005533", "#1199EE")  # Colorblind-safe RGB
+    x_min, x_max = ax.get_xlim()
+    scale = (x_max - x_min)/4
+    for i in np.linspace(0, len(q_in), num=20, endpoint=False, dtype=int):
+        r = q_in[i]
+        loc = demo[i, :]
+        for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
+                                            colors)):
+            line = np.zeros((2, 3))
+            line[1, j] = scale
+            line_rot = r.apply(line)
+            line_plot = line_rot + loc
+            ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c, alpha=0.3,linewidth=1)
+
+
+    for i in np.linspace(0, len(new_ori), num=20, endpoint=False, dtype=int):
+        r = new_ori[i]
+        loc = adjust[i, :]
+        for j, (axis, c) in enumerate(zip((ax.xaxis, ax.yaxis, ax.zaxis),
+                                            colors)):
+            line = np.zeros((2, 3))
+            line[1, j] = scale
+            line_rot = r.apply(line)
+            line_plot = line_rot + loc
+            ax.plot(line_plot[:, 0], line_plot[:, 1], line_plot[:, 2], c,  linewidth=1)
+
+
     ax.axis('equal')
     ax.legend(ncol=4, loc="upper center")
+
+    ax.set_xlabel(r'$\xi_1$', labelpad=20)
+    ax.set_ylabel(r'$\xi_2$', labelpad=20)
+    ax.set_zlabel(r'$\xi_3$', labelpad=20)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    ax.zaxis.set_major_locator(MaxNLocator(nbins=4))
+
+    ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+    ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+
+
+
+def plot_quat(q_list, q_list_new):
+
+    # omega_test = np.vstack(omega_test)
+    q_arr = list_to_arr(q_list)
+    q_arr_new = list_to_arr(q_list_new)
+
+    M, N = q_arr.shape
+    fig, axs = plt.subplots(N, 1, figsize=(12, 8))
+
+    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+    for k in range(N):
+        axs[k].plot(np.arange(M), q_arr[:, k], color=colors[k], alpha = 0.5)
+        axs[k].plot(np.arange(M), q_arr_new[:, k], color=colors[k])
+
+        # axs[k].set_ylim([0, 1])
+
+
+
+
+
+
+def demo_vs_adjust_gmm(p_in, demo, gmm, old_gmm_struct, new_ori, gmm_struct):
+
+    label = gmm.assignment_arr
+    K     = gmm.K
+
+    colors = ["r", "g", "b", "k", 'c', 'm', 'y', 'crimson', 'lime'] + [
+    "#" + ''.join([random.choice('0123456789ABCDEF') for j in range(6)]) for i in range(200)]
+
+    color_mapping = np.take(colors, label)
+
+    fig = plt.figure(figsize=(12, 10))
+    ax = fig.add_subplot(projection='3d')
+
+    ax.scatter(p_in[:, 0], p_in[:, 1], p_in[:, 2], 'o', color=color_mapping[:], s=1, alpha=0.4, label="Demonstration")
+
+
+    colors = ("#FF6666", "#005533", "#1199EE")  # Colorblind-safe RGB
+
+    x_min, x_max = ax.get_xlim()
+    scale = (x_max - x_min)/4
+    for k in range(K):
+        loc = old_gmm_struct.Mu[:, k]
+        ax.text(loc[0], loc[1], loc[2], str(k + 1), fontsize=20)
+
+
+    ax.scatter(p_in[:, 0], p_in[:, 1], p_in[:, 2], 'o', color=color_mapping[:], s=1, alpha=0.4, label="Demonstration")
+
+    for k in range(K):
+        loc = gmm_struct.Mu[:, k]
+        ax.text(loc[0], loc[1], loc[2], str(k + 1), fontsize=20)
+
+
+
+
+    ax.axis('equal')
+
 
     ax.set_xlabel(r'$\xi_1$', labelpad=20)
     ax.set_ylabel(r'$\xi_2$', labelpad=20)

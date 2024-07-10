@@ -14,12 +14,12 @@ sys.path.append(parent_directory)
 
 
 
-from elastic_gmm.split_traj import split_traj
-from elastic_gmm.gaussian_kinematics import create_transform_azi
+# from elastic_gmm.split_traj import split_traj
+# from elastic_gmm.gaussian_kinematics import create_transform_azi
 from elastic_gmm.generate_transfer import start_adapting
-from utils.pipeline_func import get_gmm, get_ds
-from utils.plotting import plot_full_func
-from lpv_ds_a.utils_ds.structures import ds_gmms
+# from utils.pipeline_func import get_gmm, get_ds
+# from utils.plotting import plot_full_func
+# from lpv_ds_a.utils_ds.structures import ds_gmms
 
 
 
@@ -44,6 +44,7 @@ q_out = q_out[:100]
 
 data = np.hstack((p_in, p_out))
 
+
 '''Plot demo'''
 # plot_tools.plot_demo(p_in, q_in)
 
@@ -60,16 +61,16 @@ Mu_list = se3_obj.gmm.Mu
 Sigma_list = se3_obj.gmm.Sigma
 
 K = int(len(Priors_list) / 2)
-M = 3
+N = 3
 
 Priors = np.zeros((K))
-Mu = np.zeros((M, K))
-Sigma = np.zeros((K, M, M))
+Mu = np.zeros((N, K))
+Sigma = np.zeros((K, N, N))
 
 for k in range(K):
     Priors[k] = Priors_list[k] * 2
     Mu[:, k] = Mu_list[k][0]
-    Sigma[k, :, :] = Sigma_list[k][:M, :M]
+    Sigma[k, :, :] = Sigma_list[k][:N, :N]
 
 att = p_att
 old_gmm_struct = rearrange_clusters(Priors, Mu, Sigma, att)
@@ -77,15 +78,17 @@ old_gmm_struct = rearrange_clusters(Priors, Mu, Sigma, att)
 
 '''Define geometric constraints'''
 
-v1 = p_in[5] - p_in[0]
+v1 = p_in[25] - p_in[0]
 v1 /= np.linalg.norm(v1)
+# v1 = np.array([0, 0, 1])
 v2 = np.cross(v1, np.array([0, 1, 0]))
 v3 = np.cross(v1, v2)
 
 R_s = np.column_stack((v1, v2, v3))
 
-u1 = p_in[-1] - p_in[-5]
+u1 = p_in[-1] - p_in[-25]
 u1 /= np.linalg.norm(u1)
+# u1 = np.array([0, 0, -1])
 u2 = np.cross(u1, np.array([0, 1, 0]))
 u3 = np.cross(u1, u2)
 
@@ -106,17 +109,54 @@ T_e[:3, -1] = p_in[-1]
 T_e[-1, -1] = 1
 
 
-
-
 '''Start adapting'''
-
 traj_data, gmm_struct, old_anchor, new_anchor = start_adapting([data.T], old_gmm_struct, T_s, T_e)
 
 
-plot_tools.demo_vs_adjust(p_in, traj_data[0][:3, :].T, old_anchor, new_anchor)
 
-plot_tools.plot_gmm(p_in, se3_obj.gmm)
 
+'''Record Relative Orientation'''
+ori_sigma_old = [R.identity] * K
+for k in range(K):
+
+    Sigma_k = old_gmm_struct.Sigma[k, :, :]
+    _, eigen_vectors = np.linalg.eig(Sigma_k)
+    ori_sigma_old[k] = R.from_matrix(eigen_vectors)
+
+    # ori_sigma_old[k] = R.from_matrix(old_gmm_struct.Sigma[k, :, :])
+
+
+assignment_array = se3_obj.gmm.assignment_arr
+M = assignment_array.shape[0]
+relative_ori = [R.identity()] * M
+for i in range(M):
+    k = assignment_array[i]
+    relative_ori[i] = q_in[i] * ori_sigma_old[k].inv() 
+
+
+'''Update new orientation'''
+ori_sigma_new = [R.identity] * K
+for k in reversed(range(K)):
+    Sigma_k = gmm_struct.Sigma[k, :, :]
+    _, eigen_vectors = np.linalg.eig(Sigma_k)
+    ori_sigma_new[k] = R.from_matrix(eigen_vectors)
+
+    # ori_sigma_new[k] = R.from_matrix(gmm_struct.Sigma[k, :, :])
+
+
+new_ori = [R.identity()] * M
+for i in range(M):
+    k = assignment_array[i]
+    new_ori[i] = relative_ori[i] * ori_sigma_new[k]
+
+
+plot_tools.demo_vs_adjust(p_in, traj_data[0][:3, :].T, old_anchor, new_anchor, q_in, new_ori)
+
+
+# plot_tools.demo_vs_adjust_gmm(p_in, traj_data[0][:3, :].T, se3_obj.gmm, old_gmm_struct, new_ori, gmm_struct)
+
+# plot_tools.plot_gmm(p_in, se3_obj.gmm)
+plot_tools.plot_quat(q_in, new_ori)
 
 plt.show()
 

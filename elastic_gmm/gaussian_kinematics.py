@@ -1,10 +1,5 @@
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
-from elastic_gmm.gaussian2d import generate_surface, plot_sample
-from elastic_gmm.gaussian3d import create_ellipsoid
-# from find_joints import find_most_similar_eig
+
 
 def create_transform_azi(trans, jnt_rot):
     if len(trans) == 2:
@@ -61,7 +56,6 @@ class GaussianKinematics:
 
         self.anchor_arr = anchor_arr
 
-                
         self.mean_transform_arr, self.cov_transform_arr, self.cov_eval_arr = self.calculate_gaussian_transforms()
 
         self.plot_sample = 200
@@ -181,59 +175,6 @@ class GaussianKinematics:
 
         return np.array(frame_arr), np.array(mean_arr), np.array(cov_arr)
 
-            
-
-    
-
-    def plot(self, frame_arr, mean_arr, cov_arr, T_arr, traj_arr=None, ax=None):
-        if ax is None:
-            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(4, 4))
-        # if ax is None:
-        #     return
-        
-        ax.set_aspect(1)
-
-        ax.scatter(frame_arr[:,0], frame_arr[:,1], color='orange', label='joints')
-        # ax.scatter(frame_arr[0,0], frame_arr[0,1], color='black', label='start')
-        # ax.scatter(frame_arr[-1,0], frame_arr[-1,1], color='green', label='end')
-        ax.scatter(mean_arr[:,0], mean_arr[:,1], color='red', s=2, label='means')
-
-        # self.draw_frame_axis(np.eye(3), ax)
-
-        # for i in range(len(T_arr)):
-        #     self.draw_frame_axis(T_arr[i], ax)
-
-        # for i in range(len(mean_arr)):
-        #     e_val, e_vec = np.linalg.eig(cov_arr[i])
-        #     sample_pts = create_ellipsoid(mean_arr[i], np.sqrt(e_val), e_vec)
-        #     ax.plot_surface(sample_pts[0], sample_pts[1], sample_pts[2], color='blue', alpha=0.7)
-
-        p_sum = np.zeros((plot_sample, plot_sample))
-        for i in range(len(mean_arr)):
-            x1, x2, p_curr = generate_surface(mean_arr[i].reshape(-1,1), cov_arr[i], 2)
-            p_sum += p_curr
-
-        step = 0.02
-        m = np.amax(p_sum)
-        levels = np.arange(0.0, m, step) + step
-        ax.contourf(x1, x2, p_sum, zorder=0, alpha=1.0)
-
-
-        if traj_arr is not None:
-            ax.scatter(traj_arr[:,0], traj_arr[:,1], color='red', s=2)
-        
-        
-        ax.legend()
-        ax.set_xlim([0.0,1.0])
-        ax.set_ylim([0.0,1.0])
-        plt.show()
-
-    def plot_original(self, traj_arr=None, ax=None):
-        if traj_arr is not None and ax is not None:
-            ax.set_aspect(1)
-            ax.plot(traj_arr[:,0], traj_arr[:,1], color='brown', label='original')
-            ax.scatter(traj_arr[0,0], traj_arr[0,1], color='black', label='start')
-            ax.scatter(traj_arr[-1,0], traj_arr[-1,1], color='green', label='end')
 
 
 
@@ -368,33 +309,3 @@ class GaussianKinematics3D:
             frame_arr.append(T[:3, -1])
 
         return np.array(frame_arr), np.array(mean_arr), np.array(cov_arr)
-    
-
-    def plot(self, frame_arr, mean_arr, cov_arr, T_arr, traj_arr=None):
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 10), subplot_kw={'projection': '3d'})
-        
-        #ax.set_box_aspect(aspect = (1.0,1.0,1.0))
-
-        ax.plot(frame_arr[:,0], frame_arr[:,1], frame_arr[:,2], color='black')
-        ax.scatter(mean_arr[:,0], mean_arr[:,1], mean_arr[:,2], color='brown')
-
-        #self.draw_frame_axis(np.eye(4), ax)
-
-        # for i in range(len(T_arr)):
-        #     self.draw_frame_axis(T_arr[i], ax)
-
-        # for i in range(len(mean_arr)):
-        #     e_val, e_vec = np.linalg.eig(cov_arr[i])
-        #     sample_pts = create_ellipsoid(mean_arr[i], np.sqrt(e_val), e_vec)
-        #     ax.plot_surface(sample_pts[0], sample_pts[1], sample_pts[2], color='blue', alpha=0.7)
-
-        if traj_arr is not None:
-            ax.scatter(traj_arr[:,0], traj_arr[:,1], traj_arr[:,2],color='red', s=2)
-
-        ax.set_xlim([0.0,1.0])
-        ax.set_ylim([0.0,1.0])
-        ax.set_zlim([0.0,1.0])
-        ax.set_xlabel('x') 
-        ax.set_ylabel('y')
-        ax.set_zlabel('z') 
-        plt.show() 
