@@ -147,9 +147,3 @@ plot_tools.demo_vs_adjust(p_in, traj_data[0][:3, :].T, old_anchor, new_anchor, q
 plot_tools.plot_quat(q_in, new_ori)
 
 plt.show()
-
-
-
-
-
-
