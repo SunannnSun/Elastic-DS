@@ -3,3 +3,12 @@
 /env
 
 venv/
+
+src/gmm_class.pu
+src/se3_class.py
+
+src/util/load_tools.py
+src/util/optimize_tools.py
+src/util/plot_tools.py
+src/util/quat_tools.py
+src/util/process_tools.py

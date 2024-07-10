@@ -1,6 +1,5 @@
 import numpy as np
 import os, sys
-from os.path import exists
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 
@@ -10,11 +9,10 @@ parent_directory = os.path.dirname(current_directory)
 sys.path.append(parent_directory)
 
 
-
-from elastic_gmm.generate_transfer import start_adapting
-
 from src.util import load_tools, process_tools, plot_tools
 from src.se3_class import se3_class
+
+from src.generate_transfer import start_adapting
 
 
 '''Load data'''
@@ -45,7 +43,7 @@ se3_obj.begin()
 
 
 '''GMM Structure object'''
-from lpv_ds_a.utils_ds.rearrange_clusters import rearrange_clusters
+from src.util.rearrange_clusters import rearrange_clusters
 Priors_list = se3_obj.gmm.Prior
 Mu_list = se3_obj.gmm.Mu
 Sigma_list = se3_obj.gmm.Sigma

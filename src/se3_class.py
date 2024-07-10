@@ -107,7 +107,7 @@ class se3_class:
     def begin(self):
         self._cluster()
         self._optimize()
-        self._logOut()
+        # self._logOut()
 
 
 

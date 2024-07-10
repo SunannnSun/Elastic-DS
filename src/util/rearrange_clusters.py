@@ -1,7 +1,6 @@
-from lpv_ds_a.utils_ds.knn_search import knn_search
+from src.util.knn_search import knn_search
 import numpy as np
-from lpv_ds_a.utils_ds.structures import ds_gmms
-from lpv_ds_a.math_tool.gaussain.adjust_covariances import adjust_covariances
+from src.util.structures import ds_gmms
 
 
 # Plug in Priors (1xK) Mu(dim x K) Sigma (K x dim x dim) attractor
@@ -38,7 +37,8 @@ def rearrange_clusters(Priors, Mu, Sigma, att):
             # this is for dim == 3
             tot_dilation_factor = 1
             rel_dilation_fact = 0.75
-        Sigma_ = adjust_covariances(ds_gmm.Priors, ds_gmm.Sigma, tot_dilation_factor, rel_dilation_fact)
+        # Sigma_ = adjust_covariances(ds_gmm.Priors, ds_gmm.Sigma, tot_dilation_factor, rel_dilation_fact)
+        Sigma_ = Sigma
         ds_gmm.Sigma = Sigma_
 
     return ds_gmm

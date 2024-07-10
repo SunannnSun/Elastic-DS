@@ -1,9 +1,9 @@
 import numpy as np
 
-from lpv_ds_a.utils_ds.structures import ds_gmms
-from elastic_gmm.gaussian_kinematics import GaussianKinematics, GaussianKinematics3D
-from elastic_gmm.find_joints import get_joints
-from elastic_gmm.IK import solveIK, solveTraj
+from src.util.structures import ds_gmms
+from src.gaussian_kinematics import GaussianKinematics, GaussianKinematics3D
+from src.find_joints import get_joints
+from src.IK import solveIK, solveTraj
 
 
 
