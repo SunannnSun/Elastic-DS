@@ -1,9 +1,8 @@
 import numpy as np
 
-from src.util.structures import ds_gmms
-from src.gaussian_kinematics import GaussianKinematics, GaussianKinematics3D
-from src.find_joints import get_joints
-from src.IK import solveIK, solveTraj
+from .gaussian_kinematics import GaussianKinematics, GaussianKinematics3D
+from .find_joints import get_joints
+from .IK import solveIK, solveTraj
 
 
 
@@ -41,9 +40,9 @@ def start_adapting(traj, gmm, target_start_pose, target_end_pose, dt=None):
     pi: (K, )
     """
 
-    pi = gmm.Priors
-    mu = gmm.Mu.T  #(gmm['ds_gmm'][0][0][0].T)
-    sigma = gmm.Sigma
+    pi = gmm["Prior"]
+    mu = gmm["Mu"].T  #(gmm['ds_gmm'][0][0][0].T)
+    sigma = gmm["Sigma"]
     dim = mu.shape[1]
 
 
@@ -71,10 +70,11 @@ def start_adapting(traj, gmm, target_start_pose, target_end_pose, dt=None):
 
     new_anchor_point = solveIK(anchor_arr, target_start_pose, target_end_pose, traj_dis)  # solve for new anchor points
     _, mean_arr, cov_arr = gk.update_gaussian_transforms(new_anchor_point)
-    new_gmm = ds_gmms()
-    new_gmm.Mu = mean_arr.T
-    new_gmm.Priors = pi
-    new_gmm.Sigma = cov_arr
+    new_gmm = {
+        "Mu": mean_arr.T,
+        "Sigma": cov_arr,
+        "Prior": pi
+    }
 
 
     plot_traj, traj_dot_arr = solveTraj(np.copy(new_anchor_point), dt)  # solve for new trajectory
